@@ -10,11 +10,21 @@ from matplotlib import pyplot as plt
 import os
 from timm.models import create_model
 from models.build_models import *
+from dataclasses import dataclass
 
 import urllib.request
 
 
 device = 'cuda'
+
+@dataclass
+class ModelArgs:
+    nb_classes: int = 5
+    model: str = 'iFormer_m'
+    use_scsa_attn: bool = False
+    image_path: str = r'D:/flower_data/sunflowers/44079668_34dfee3da1_n.jpg'
+    best_ckpt: str = r'./output/iFormer_m_best_checkpoint.pth'
+    device: str = 'cuda'
 
 
 def download_from_url(url, path=None, root="./"):
@@ -86,7 +96,7 @@ def plot_probs(texts, probs, fig_ax, lang_type=None, save_path=None):
     ax.axis("off")
 
     if save_path:
-        plt.savefig(save_path, bbox_inches="tight")  # 保存图片并移除多余空白
+        plt.savefig(save_path, bbox_inches="tight")
         print(f"Figure saved to {save_path}")
 
 
@@ -113,14 +123,16 @@ def lang_type_to_font_path(lang_type):
 
 if __name__ == '__main__':
 
+    args = ModelArgs()
+
     model = create_model(
-        'iFormer_m',
-        num_classes=5
+        args.model,
+        num_classes=args.nb_classes,
+        use_scsa_attn=args.use_scsa_attn,
     )
-    model.load_state_dict(torch.load('./output/iFormer_m_best_checkpoint.pth')['model'])
-    model.to(device)
+    model.load_state_dict(torch.load(args.best_ckpt)['model'])
+    model.to(args.device)
 
     texts = load_class_names('./classes_indices.json')
     # image_path = r'D:/flower_data/roses/1666341535_99c6f7509f_n.jpg'
-    image_path = r'D:/flower_data/sunflowers/44079668_34dfee3da1_n.jpg'
-    predict_probs_and_plot(model, image_path, texts)
+    predict_probs_and_plot(model, args.image_path, texts)

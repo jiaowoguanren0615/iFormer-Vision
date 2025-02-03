@@ -31,7 +31,7 @@ parser.add_argument('--model', default='iFormer_m', type=str, metavar='MODEL',
                                  'iFormer_t', 'iFormer_l2', 'iFormer_l_faster',
                                  'iFormer_m_faster', 'iFormer_l2_faster'],
                         help='Name of model to train')
-parser.add_argument('--extra_attention_block', default=False, type=bool, help='Add an extra attention block')
+parser.add_argument('--use_scsa_attn', default=False, type=bool, help='Add an extra attention block (SCSA)')
 parser.add_argument('--checkpoint', default='./output/iFormer_m_best_checkpoint.pth', type=str, metavar='PATH',
                     help='path to checkpoint (default: none)')
 parser.add_argument('--batch-size', default=1, type=int,
@@ -205,7 +205,7 @@ def main():
     model = create_model(
         args.model,
         num_classes=args.nb_classes,
-        extra_attention_block=args.extra_attention_block,
+        use_scsa_attn=args.use_scsa_attn,
         exportable=True
     )
 

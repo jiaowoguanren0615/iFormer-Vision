@@ -63,7 +63,7 @@ def get_args_parser():
                                  'iFormer_t', 'iFormer_l2', 'iFormer_l_faster',
                                  'iFormer_m_faster', 'iFormer_l2_faster'],
                         help='Name of model to train')
-    parser.add_argument('--extra_attention_block', default=False, type=bool, help='Add an extra attention block')
+    parser.add_argument('--use_scsa_attn', default=False, type=bool, help='Add an extra attention block (SCSA)')
     parser.add_argument('--input-size', default=224, type=int, help='images input size')
     parser.add_argument('--model-ema', action='store_true')
     parser.add_argument('--no-model-ema', action='store_false', dest='model_ema')
@@ -297,6 +297,7 @@ def main(args):
     model = create_model(
         args.model,
         num_classes=args.nb_classes,
+        use_scsa_attn=args.use_scsa_attn,
         args=args
     )
 
@@ -323,10 +324,10 @@ def main(args):
             for name, para in model.named_parameters():
                 if 'classifier' not in name:
                     para.requires_grad_(False)
-                # else:
-                #     print('training {}'.format(name))
-            if args.extra_attention_block:
-                for name, para in model.extra_attention_block.named_parameters():
+
+            # only training attn module and head-layer if freeze other layers
+            if args.use_scsa_attn:
+                for name, para in model.scsa_attn.named_parameters():
                     para.requires_grad_(True)
 
     model.to(device)
@@ -505,6 +506,7 @@ def main(args):
         model_predict = create_model(
             args.model,
             num_classes=args.nb_classes,
+            use_scsa_attn=args.use_scsa_attn,
             args=args
         )
         model_predict.to(device)
@@ -522,4 +524,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
     if args.output_dir:
         Path(args.output_dir).mkdir(parents=True, exist_ok=True)
+    # os.system('nvidia-smi')
     main(args)

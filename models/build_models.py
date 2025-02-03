@@ -12,7 +12,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from timm.models.layers import trunc_normal_, DropPath
 from timm.models.registry import register_model
-from timm.models.vision_transformer import trunc_normal_
+
+from models.scsa import SCSA
 
 
 class HOOK(nn.Module):
@@ -702,8 +703,8 @@ class iFormer(nn.Module):
     Args:
         in_chans (int): Number of input image channels. Default: 3
         num_classes (int): Number of classes for classification head. Default: 1000
-        depths (tuple(int)): Number of blocks at each stage. Default: [3, 3, 9, 3]
-        dims (int): Feature dimension at each stage. Default: [96, 192, 384, 768]
+        depths (list(int)): Number of blocks at each stage. Default: [3, 3, 9, 3]
+        dims (list): Feature dimension at each stage. Default: [96, 192, 384, 768]
         drop_path_rate (float): Stochastic depth rate. Default: 0.
         layer_scale_init_value (float): Init value for Layer Scale. Default: 1e-6.
         head_init_scale (float): Init scaling value for classifier weights and biases. Default: 1.
@@ -728,10 +729,15 @@ class iFormer(nn.Module):
                  block_types=None,
                  act_layer=nn.GELU,
                  downsample_kernels=[3, 3, 3, 3],
+                 use_scsa_attn=True,
                  **kwargs
                  ):
         super().__init__()
         self.use_bn = use_bn
+
+        self.use_scsa_attn = use_scsa_attn
+        self.scsa_attn_fn = SCSA
+
         self.downsample_layers = nn.ModuleList()  # stem and 3 intermediate downsampling conv layers
         stem_kernel = downsample_kernels[0]
         if conv_stem_type == 'FusedIB':
@@ -775,8 +781,10 @@ class iFormer(nn.Module):
                 *[BasicBlock(dim=dims[i], drop_path=dp_rates[cur + j],
                         layer_scale_init_value=layer_scale_init_value,
                         block_type=block_types[cur + j],
-                        block_index=cur+j) for j in range(depths[i])]
+                        block_index=cur+j) for j in range(depths[i])],
             )
+            if self.use_scsa_attn:
+                stage.add_module('scsa_attn', self.scsa_attn_fn(dim=dims[i], head_num=1, attn_drop_ratio=0.1, window_size=7))
             self.stages.append(stage)
             cur += depths[i]
         self.last_proj = last_proj
@@ -949,9 +957,12 @@ def iFormer_h(pretrained=False, pretrained_cfg=None, pretrained_cfg_overlay=None
                      **kwargs)
     return model
 
-# if __name__ == '__main__':
-#     net = iFormer_m(num_classes=5)
-#     x = torch.randn(1, 3, 224, 224)
-#     y = net.forward_intermediate(x)
-#     for i in y:
-#         print(i.shape)
+if __name__ == '__main__':
+    # from torchinfo import summary
+    net = iFormer_m(num_classes=5)
+    x = torch.randn(1, 3, 224, 224)
+    # summary(net, input_size=(1, 3, 224, 224))
+    y = net.forward_intermediate(x)
+    for i in y:
+        print(i.shape)
+
