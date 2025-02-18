@@ -3,6 +3,7 @@
 # [IFORMER: INTEGRATING CONVNET AND TRANS- FORMER FOR MOBILE APPLICATION](https://arxiv.org/abs/2404.10518)
 ## This project is implemented in PyTorch, can be used to train your image-datasets for vision tasks.  
 ## For segmentation tasks, please refer this [github warehouse](https://github.com/jiaowoguanren0615/Segmentation_Factory/blob/main/models/backbones/iformer.py)  
+## For detection tasks(based on DETR arch), please refer this [github warehouse](https://github.com/jiaowoguanren0615/Detection-Factory/blob/main/configs/salience_detr_iformer_800_1333.py)  
 
 ![image](https://github.com/ChuanyangZheng/iFormer/blob/main/figures/comparison.png)
 
